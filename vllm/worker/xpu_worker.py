@@ -6,7 +6,7 @@ import os
 from typing import List, Optional, Tuple
 
 import intel_extension_for_pytorch  # noqa: F401
-import oneccl_bindings_for_pytorch  # noqa: F401
+#import oneccl_bindings_for_pytorch  # noqa: F401
 import torch
 import torch.distributed
 
@@ -161,18 +161,18 @@ class XPUWorker(LoRANotSupportedWorkerBase, Worker):
             # use sockets as default Level zero IPC exchange backend. By
             # default oneccl will use `drmfd` as mechanism which need extra
             # dependency (libdrm and drm headers) on your system.
-            ENV_CCL_ATL_TRANSPORT = os.getenv("CCL_ATL_TRANSPORT", "ofi")
-            ENV_LOCAL_WORLD_SIZE = os.getenv("LOCAL_WORLD_SIZE",
-                                             str(parallel_config.world_size))
-            os.environ["CCL_ATL_TRANSPORT"] = ENV_CCL_ATL_TRANSPORT
-            os.environ["LOCAL_WORLD_SIZE"] = ENV_LOCAL_WORLD_SIZE
-            os.environ["LOCAL_RANK"] = str(self.local_rank)
+            #ENV_CCL_ATL_TRANSPORT = os.getenv("CCL_ATL_TRANSPORT", "ofi")
+            #ENV_LOCAL_WORLD_SIZE = os.getenv("LOCAL_WORLD_SIZE",
+            #                                 str(parallel_config.world_size))
+            #os.environ["CCL_ATL_TRANSPORT"] = ENV_CCL_ATL_TRANSPORT
+            #os.environ["LOCAL_WORLD_SIZE"] = ENV_LOCAL_WORLD_SIZE
+            #os.environ["LOCAL_RANK"] = str(self.local_rank)
             init_distributed_environment(
                 world_size=parallel_config.world_size,
                 rank=rank,
                 distributed_init_method=distributed_init_method,
                 local_rank=self.local_rank,
-                backend="ccl")
+                backend="xccl")
 
         ensure_model_parallel_initialized(
             parallel_config.tensor_parallel_size,
