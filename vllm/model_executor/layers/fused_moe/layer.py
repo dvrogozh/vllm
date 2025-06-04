@@ -586,32 +586,7 @@ class UnquantizedFusedMoEMethod(FusedMoEMethodBase, CustomOp):
             e_score_correction_bias=e_score_correction_bias,
             indices_type=self.topk_indices_dtype)
 
-        if True:
-            from intel_extension_for_pytorch.quantization import (
-                WoqWeightDtype,
-                WoqLowpMode
-            )
-            return torch.ops.torch_ipex.fused_experts(
-                hidden_states=x,
-                w1=layer.w13_weight,
-                w2=layer.w2_weight,
-                topk_weights=topk_weights,
-                topk_ids=topk_ids,
-                inplace=False,
-                is_vnni=False,
-                is_distributed=False,
-                is_woq=False,
-                woq_weight_dtype=WoqWeightDtype.INT8,
-                woq_group_size=-1,
-                woq_lowp_mode=WoqLowpMode.BF16,
-                w1_scale=None,
-                w1_zp=None,
-                w1_compensation=None,
-                w2_scale=None,
-                w2_zp=None,
-                w2_compensation=None,
-            )
-        elif self.rocm_aiter_moe_enabled:
+        if self.rocm_aiter_moe_enabled:
             assert expert_map is None
             return self.rocm_aiter_fused_experts(
                 hidden_states=x,
