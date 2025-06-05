@@ -876,6 +876,16 @@ def fused_topk(
     assert hidden_states.shape[0] == gating_output.shape[0], (
         "Number of tokens mismatch")
 
+    if current_platform.is_xpu():
+        assert indices_type is None or indices_type == torch.int32, (
+            "ipex supports only torch.int32 indices for topk_softmax")
+        topk_weights, topk_ids, token_expert_indices, _ = torch.ops.torch_ipex.topk_softmax(
+            gating_output, topk)
+        if renormalize:
+            topk_weights = topk_weights / topk_weights.sum(dim=-1,
+                                                           keepdim=True)
+        return topk_weights, topk_ids, token_expert_indices
+
     M, _ = hidden_states.shape
 
     topk_weights = torch.empty(M,
