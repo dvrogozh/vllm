@@ -1062,6 +1062,7 @@ direct_register_custom_op(
     op_func=inplace_fused_experts,
     mutates_args=["hidden_states"],
     fake_impl=inplace_fused_experts_fake,
+    dispatch_key=current_platform.dispatch_key,
     tags=(torch.Tag.needs_fixed_stride_order, ),
 )
 
@@ -1371,8 +1372,13 @@ def fused_experts_impl(
                                 block_shape=block_shape)
 
         if activation == "silu":
-            torch.ops._C.silu_and_mul(intermediate_cache2,
-                                      intermediate_cache1.view(-1, N))
+            if current_platform.is_xpu():
+                from vllm._ipex_ops import ipex_ops
+                silu_and_mul_op = ipex_ops.silu_and_mul
+            else:
+                silu_and_mul_op = torch.ops._C.silu_and_mul
+            silu_and_mul_op(intermediate_cache2,
+                            intermediate_cache1.view(-1, N))
         elif activation == "gelu":
             torch.ops._C.gelu_and_mul(intermediate_cache2,
                                       intermediate_cache1.view(-1, N))
@@ -1407,8 +1413,12 @@ def fused_experts_impl(
                                 per_channel_quant=per_channel_quant,
                                 block_shape=block_shape)
 
-        ops.moe_sum(intermediate_cache3.view(*intermediate_cache3.shape),
-                    out_hidden_states[begin_chunk_idx:end_chunk_idx])
+        if current_platform.is_xpu():
+            moe_sum_op = torch.ops.torch_ipex.moe_sum
+        else:
+            moe_sum_op = ops.moe_sum
+        moe_sum_op(intermediate_cache3.view(*intermediate_cache3.shape),
+                   out_hidden_states[begin_chunk_idx:end_chunk_idx])
 
     return out_hidden_states
 

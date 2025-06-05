@@ -6,6 +6,7 @@ import torch
 
 import vllm.envs as envs
 from vllm import _custom_ops as ops
+from vllm.platforms import current_platform
 from vllm.triton_utils import tl, triton
 from vllm.utils import round_up
 
@@ -214,8 +215,8 @@ def moe_align_block_size(
     num_tokens_post_pad = torch.empty((1),
                                       dtype=torch.int32,
                                       device=topk_ids.device)
-    if num_experts >= 224:
-        if envs.VLLM_ENABLE_MOE_ALIGN_BLOCK_SIZE_TRITON or num_experts != 256:
+    if num_experts >= 224 or current_platform.is_xpu():
+        if envs.VLLM_ENABLE_MOE_ALIGN_BLOCK_SIZE_TRITON or num_experts != 256 or current_platform.is_xpu():
             moe_align_block_size_triton(
                 topk_ids,
                 num_experts,
